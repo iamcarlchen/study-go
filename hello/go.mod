@@ -6,6 +6,7 @@ require rsc.io/quote v1.5.2
 
 require (
 	github.com/gin-gonic/gin v1.7.7
+	github.com/go-sql-driver/mysql v1.6.0
 	golang.org/x/example v0.0.0-20220412213650-2e68773dfca0
 )
 

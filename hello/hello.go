@@ -11,6 +11,9 @@ import (
 	"example.com/greetings"
 	"golang.org/x/example/stringutil"
 	"rsc.io/quote"
+
+	"database/sql"
+	"github.com/go-sql-driver/mysql"
 )
 
 type album struct {
@@ -25,6 +28,8 @@ var albums = []album{
 	{ID: "2", Title: "Jeru", Artist: "Gerry Mulligan", Price: 17.99},
 	{ID: "3", Title: "Sarah Vaughan and Clifford Brown", Artist: "Sarah Vaughan", Price: 39.99},
 }
+
+var db *sql.DB
 
 func main() {
 	// fmt.Println("hello")
@@ -42,8 +47,33 @@ func main() {
 	}
 
 	fmt.Println(stringutil.Reverse("Hello"))
-
 	fmt.Println("Hello End.")
+
+
+	fmt.Println("begin data access logic")
+	// Capture connection properties.
+	cfg := mysql.Config{
+		User:   "root",
+		Passwd: "qazWSXedc",
+		Net:    "tcp",
+		Addr:   "127.0.0.1:3306",
+		DBName: "db_ty",
+	}
+	// Get a database handle.
+	var errDB error
+	db, errDB = sql.Open("mysql", cfg.FormatDSN())
+	if errDB != nil {
+		log.Fatal(errDB)
+	}
+
+	pingErr := db.Ping()
+	if pingErr != nil {
+		log.Fatal(pingErr)
+	}
+	fmt.Println("Connected!")
+
+
+	fmt.Println("Start Server NOW..!")
 
 	router := gin.Default()
 	router.GET("/albums", getAlbums)
