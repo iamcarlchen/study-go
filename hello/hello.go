@@ -26,6 +26,6 @@ func main() {
 
 	fmt.Println(stringutil.Reverse("Hello"))
 
-	fmt.Println("....")
+	fmt.Println("Hello End.")
 
 }
