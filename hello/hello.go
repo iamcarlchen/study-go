@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"strconv"
 
 	"example/hello/morestrings"
@@ -63,8 +64,8 @@ func openDB() *sql.DB {
 	var db *sql.DB
 	// Capture connection properties.
 	cfg := mysql.Config{
-		User:   "root",
-		Passwd: "qazWSXedc",
+		User:   os.Getenv("DB_USER"),
+		Passwd: os.Getenv("DB_PASSWORD"),
 		Net:    "tcp",
 		Addr:   "127.0.0.1:3306",
 		DBName: "db_ty",
