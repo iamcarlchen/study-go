@@ -4,6 +4,10 @@ import (
 	"fmt"
 	"log"
 
+	"example/hello/morestrings"
+
+	"github.com/google/go-cmp/cmp"
+
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -13,6 +17,7 @@ import (
 	"rsc.io/quote"
 
 	"database/sql"
+
 	"github.com/go-sql-driver/mysql"
 )
 
@@ -32,7 +37,9 @@ var albums = []album{
 var db *sql.DB
 
 func main() {
-	// fmt.Println("hello")
+	fmt.Println(morestrings.ReverseRunes("!oG ,olleH"))
+
+	fmt.Println(cmp.Diff("Hello World", "Hello Go"))
 
 	log.SetPrefix("greetings: ")
 	log.SetFlags(0)
@@ -48,7 +55,6 @@ func main() {
 
 	fmt.Println(stringutil.Reverse("Hello"))
 	fmt.Println("Hello End.")
-
 
 	fmt.Println("begin data access logic")
 	// Capture connection properties.
@@ -71,7 +77,6 @@ func main() {
 		log.Fatal(pingErr)
 	}
 	fmt.Println("Connected!")
-
 
 	fmt.Println("Start Server NOW..!")
 
