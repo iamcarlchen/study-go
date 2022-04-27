@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strconv"
 
 	"example/hello/morestrings"
 
@@ -34,12 +35,9 @@ var albums = []album{
 	{ID: "3", Title: "Sarah Vaughan and Clifford Brown", Artist: "Sarah Vaughan", Price: 39.99},
 }
 
-var db *sql.DB
-
 func main() {
-	fmt.Println(morestrings.ReverseRunes("!oG ,olleH"))
-
 	fmt.Println(cmp.Diff("Hello World", "Hello Go"))
+	fmt.Println(morestrings.ReverseRunes("!oG ,olleH"))
 
 	log.SetPrefix("greetings: ")
 	log.SetFlags(0)
@@ -56,7 +54,34 @@ func main() {
 	fmt.Println(stringutil.Reverse("Hello"))
 	fmt.Println("Hello End.")
 
+	fmt.Println("Start Server NOW..!")
+
+	router := gin.Default()
+	router.GET("/albums", getAlbums)
+	router.GET("/albums/:id", getAlbumByID)
+	router.POST("/albums", postAlbums)
+
+	router.GET("/user/:id", getUserByid)
+
+	router.Run("localhost:8080")
+}
+
+type User struct {
+	ID       string `json:"id"`
+	XingMing string `json:"xingMing"`
+	UserName string `json:"userName"`
+	Password string `json:"password"`
+}
+
+func getUserByid(c *gin.Context) {
+	// var e error
+	userId, e := strconv.Atoi(c.Param("id"))
+	if e != nil {
+		log.Fatal(e)
+	}
+
 	fmt.Println("begin data access logic")
+	var db *sql.DB
 	// Capture connection properties.
 	cfg := mysql.Config{
 		User:   "root",
@@ -72,20 +97,27 @@ func main() {
 		log.Fatal(errDB)
 	}
 
-	pingErr := db.Ping()
-	if pingErr != nil {
-		log.Fatal(pingErr)
+	// pingErr := db.Ping()
+	// if pingErr != nil {
+	// 	log.Fatal(pingErr)
+	// }
+	// fmt.Println("Connected!")
+
+	var u User
+
+	row := db.QueryRow("SELECT id,xingMing,userName,`password` FROM ty_user WHERE id = ?", userId)
+	if err := row.Scan(&u.ID, &u.XingMing, &u.UserName, &u.Password); err != nil {
+		// if err == sql.ErrNoRows {
+		// return u, fmt.Errorf("getUserByid %d: no such user", userId)
+		// }
+		// return u, fmt.Errorf("getUserByid %d: %v", userId, err)
+
+		fmt.Println(err)
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "user not found"})
+		return
 	}
-	fmt.Println("Connected!")
 
-	fmt.Println("Start Server NOW..!")
-
-	router := gin.Default()
-	router.GET("/albums", getAlbums)
-	router.GET("/albums/:id", getAlbumByID)
-	router.POST("/albums", postAlbums)
-
-	router.Run("localhost:8080")
+	c.IndentedJSON(http.StatusOK, u)
 }
 
 // getAlbums responds with the list of all albums as JSON.
