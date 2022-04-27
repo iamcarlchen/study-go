@@ -22,19 +22,6 @@ import (
 	"github.com/go-sql-driver/mysql"
 )
 
-type album struct {
-	ID     string  `json:"id"`
-	Title  string  `json:"title"`
-	Artist string  `json:"artist"`
-	Price  float64 `json:"price"`
-}
-
-var albums = []album{
-	{ID: "1", Title: "Blue Train", Artist: "John Coltrane", Price: 56.99},
-	{ID: "2", Title: "Jeru", Artist: "Gerry Mulligan", Price: 17.99},
-	{ID: "3", Title: "Sarah Vaughan and Clifford Brown", Artist: "Sarah Vaughan", Price: 39.99},
-}
-
 func main() {
 	fmt.Println(cmp.Diff("Hello World", "Hello Go"))
 	fmt.Println(morestrings.ReverseRunes("!oG ,olleH"))
@@ -57,10 +44,7 @@ func main() {
 	fmt.Println("Start Server NOW..!")
 
 	router := gin.Default()
-	router.GET("/albums", getAlbums)
-	router.GET("/albums/:id", getAlbumByID)
-	router.POST("/albums", postAlbums)
-
+	router.GET("/users", getUsers)
 	router.GET("/user/:id", getUserByid)
 
 	router.Run("localhost:8080")
@@ -73,14 +57,9 @@ type User struct {
 	Password string `json:"password"`
 }
 
-func getUserByid(c *gin.Context) {
-	// var e error
-	userId, e := strconv.Atoi(c.Param("id"))
-	if e != nil {
-		log.Fatal(e)
-	}
+func openDB() *sql.DB {
+	fmt.Println("begin open db.....")
 
-	fmt.Println("begin data access logic")
 	var db *sql.DB
 	// Capture connection properties.
 	cfg := mysql.Config{
@@ -97,21 +76,23 @@ func getUserByid(c *gin.Context) {
 		log.Fatal(errDB)
 	}
 
-	// pingErr := db.Ping()
-	// if pingErr != nil {
-	// 	log.Fatal(pingErr)
-	// }
-	// fmt.Println("Connected!")
+	return db
+}
+
+func getUserByid(c *gin.Context) {
+	// var e error
+	userId, e := strconv.Atoi(c.Param("id"))
+	if e != nil {
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "not valid userid"})
+		return
+	}
 
 	var u User
 
+	db := openDB()
 	row := db.QueryRow("SELECT id,xingMing,userName,`password` FROM ty_user WHERE id = ?", userId)
-	if err := row.Scan(&u.ID, &u.XingMing, &u.UserName, &u.Password); err != nil {
-		// if err == sql.ErrNoRows {
-		// return u, fmt.Errorf("getUserByid %d: no such user", userId)
-		// }
-		// return u, fmt.Errorf("getUserByid %d: %v", userId, err)
-
+	err := row.Scan(&u.ID, &u.XingMing, &u.UserName, &u.Password)
+	if err != nil {
 		fmt.Println(err)
 		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "user not found"})
 		return
@@ -120,38 +101,33 @@ func getUserByid(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, u)
 }
 
-// getAlbums responds with the list of all albums as JSON.
-func getAlbums(c *gin.Context) {
-	c.IndentedJSON(http.StatusOK, albums)
-}
+func getUsers(c *gin.Context) {
+	db := openDB()
 
-// postAlbums adds an album from JSON received in the request body.
-func postAlbums(c *gin.Context) {
-	var newAlbum album
+	var users []User
 
-	// Call BindJSON to bind the received JSON to
-	// newAlbum.
-	if err := c.BindJSON(&newAlbum); err != nil {
-		return
+	rows, err := db.Query("SELECT id, xingMing,userName,`password` FROM ty_user limit 20")
+
+	if err != nil {
+		fmt.Println(err)
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "no users"})
 	}
-
-	// Add the new album to the slice.
-	albums = append(albums, newAlbum)
-	c.IndentedJSON(http.StatusCreated, newAlbum)
-}
-
-// getAlbumByID locates the album whose ID value matches the id
-// parameter sent by the client, then returns that album as a response.
-func getAlbumByID(c *gin.Context) {
-	id := c.Param("id")
-
-	// Loop over the list of albums, looking for
-	// an album whose ID value matches the parameter.
-	for _, a := range albums {
-		if a.ID == id {
-			c.IndentedJSON(http.StatusOK, a)
-			return
+	defer rows.Close()
+	// Loop through rows, using Scan to assign column data to struct fields.
+	for rows.Next() {
+		var u User
+		err := rows.Scan(&u.ID, &u.XingMing, &u.UserName, &u.Password)
+		if err != nil {
+			fmt.Println(err)
+			// return nil, fmt.Errorf("albumsByArtist %q: %v", name, err)
 		}
+		users = append(users, u)
 	}
-	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "album not found"})
+	if err := rows.Err(); err != nil {
+		fmt.Println(err)
+		// return nil, fmt.Errorf("albumsByArtist %q: %v", name, err)
+	}
+
+	c.IndentedJSON(http.StatusOK, users)
+	return
 }
